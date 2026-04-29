@@ -1,15 +1,16 @@
 name: Terraform CI/CD
 
 on:
+  push:
+
   pull_request:
     branches: [ dev ]
-
-  push:
-    branches: [ dev ]
+    types: [ opened, synchronize, reopened, closed ]
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
+
     permissions:
       id-token: write
       contents: read
@@ -54,5 +55,5 @@ jobs:
         path: plan.txt
 
     - name: Terraform Apply
-      if: github.event_name == 'push' && contains(github.event.head_commit.message, 'Merge pull request')
+      if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
       run: terraform apply -auto-approve tfplan
