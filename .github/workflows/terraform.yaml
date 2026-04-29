@@ -5,31 +5,19 @@ on:
     branches: [ dev ]
     types: [ opened, synchronize, reopened, closed ]
 
-concurrency:
-  group: terraform-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-
-# =========================
-# 🧪 PLAN (CI)
-# =========================
-  terraform-plan:
+  terraform-apply:
     runs-on: ubuntu-latest
-
-    # ❌ Skip when PR is merged
-    if: github.event.action != 'closed'
+    if: github.event.action == 'closed' && github.event.pull_request.merged == true
 
     permissions:
       id-token: write
       contents: read
-      pull-requests: write
 
     defaults:
       run:
         working-directory: env/dev
 
-    steps:
     - name: Checkout
       uses: actions/checkout@v4
 
@@ -48,53 +36,8 @@ jobs:
     - name: Terraform Format Check
       run: terraform fmt -check
 
-    - name: Terraform Validate
+    - name: Terraform Validation
       run: terraform validate
 
     - name: Terraform Plan
       run: terraform plan -no-color -out=tfplan
-
-    - name: Save Plan
-      run: terraform show -no-color tfplan > plan.txt
-
-    - name: Comment Plan in PR
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
-        path: plan.txt
-
-
-# =========================
-# 🚀 APPLY (CD)
-# =========================
-  terraform-apply:
-    runs-on: ubuntu-latest
-
-    # ✅ Only when PR is merged
-    if: github.event.action == 'closed' && github.event.pull_request.merged == true
-
-    permissions:
-      id-token: write
-      contents: read
-
-    defaults:
-      run:
-        working-directory: env/dev
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-region: us-east-1
-        role-to-assume: arn:aws:iam::914690098914:role/github-terraform-service-role
-
-    - name: Terraform Init
-      run: terraform init
-
-    - name: Terraform Apply
-      run: terraform apply -auto-approve
