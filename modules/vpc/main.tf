@@ -33,7 +33,7 @@ resource "aws_internet_gateway" "igw" {
 # Route Table
 resource "aws_route_table" "rt" {
   vpc_id = aws_vpc.tf_vpc.id
-    tags = {
+  tags = {
     Name       = "${var.vpc_name}-rt"
     Managed_by = "${var.managed_by}"
   }
@@ -56,10 +56,10 @@ resource "aws_route_table_association" "assoc" {
 resource "aws_security_group" "sg" {
   name   = "allow-ssh-http"
   vpc_id = aws_vpc.tf_vpc.id
-    tags = {
+  tags = {
     Name       = "${var.vpc_name}-sg"
     Managed_by = "${var.managed_by}"
-  }  
+  }
 
   ingress {
     from_port   = 22
