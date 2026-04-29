@@ -6,16 +6,12 @@ on:
     types: [ closed ]
 
 jobs:
-  terraform-apply:
-    # ✅ Run only if PR is merged (not just closed)
+  terraform-plan:
     if: github.event.pull_request.merged == true
-
     runs-on: ubuntu-latest
-
     permissions:
       id-token: write
       contents: read
-
     defaults:
       run:
         working-directory: env/dev
@@ -44,6 +40,48 @@ jobs:
 
     - name: Terraform Plan
       run: terraform plan -out=tfplan
+
+    # Save plan artifact so the apply job can use it
+    - name: Upload Plan Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: tfplan
+        path: env/dev/tfplan
+
+  terraform-apply:
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    # 👇 This environment has required reviewers — pauses here until approved
+    environment: terraform-apply-approval
+
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: env/dev
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-region: us-east-1
+        role-to-assume: arn:aws:iam::914690098914:role/github-terraform-service-role
+
+    - name: Download Plan Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: tfplan
+        path: env/dev
+
+    - name: Terraform Init
+      run: terraform init
 
     - name: Terraform Apply
       run: terraform apply -auto-approve tfplan
