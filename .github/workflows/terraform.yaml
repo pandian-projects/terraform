@@ -1,7 +1,6 @@
 name: Terraform CI/CD
 
 on:
-  # 🔹 Only PR events for dev branch
   pull_request:
     branches: [ dev ]
     types: [ opened, synchronize, reopened, closed ]
@@ -11,63 +10,76 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  terraform:
+  terraform-plan:
     runs-on: ubuntu-latest
-
+	if: github.event.pull_request.merged == false
     permissions:
       id-token: write
       contents: read
-
     defaults:
       run:
         working-directory: env/dev
 
     steps:
-    # 📥 Checkout
     - name: Checkout
       uses: actions/checkout@v3
 
-    # ⚙️ Terraform setup
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
 
-    # 🔐 AWS OIDC
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
         role-to-assume: arn:aws:iam::914690098914:role/github-terraform-service-role
         aws-region: us-east-1
 
-    # 🚀 Init
     - name: Terraform Init
       run: terraform init
 
-    # 🧹 Format
     - name: Terraform Format Check
       run: terraform fmt -check
 
-    # ✅ Validate
     - name: Terraform Validate
       run: terraform validate
 
-    # 📊 PLAN → only for active PR (not closed)
     - name: Terraform Plan
-      if: github.event.action != 'closed'
-      run: terraform plan -no-color -out=tfplan
+      run: terraform plan
+	  
+jobs:
+  terraform-apply:
+    runs-on: ubuntu-latest
+	if: github.event.pull_request.merged == true
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: env/dev
 
-    # 📄 Save plan
-    - name: Save Plan
-      if: github.event.action != 'closed'
-      run: terraform show -no-color tfplan > plan.txt
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
 
-    # 💬 Comment in PR
-    - name: Comment PR
-      if: github.event.action != 'closed'
-      uses: marocchino/sticky-pull-request-comment@v2
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
       with:
-        path: plan.txt
+        role-to-assume: arn:aws:iam::914690098914:role/github-terraform-service-role
+        aws-region: us-east-1
 
-    # 🚀 APPLY → only when PR is merged
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Format Check
+      run: terraform fmt -check
+
+    - name: Terraform Validate
+      run: terraform validate
+
+    - name: Terraform Plan
+      run: terraform plan
+
     - name: Terraform Apply
-      if: github.event.action == 'closed' && github.event.pull_request.merged == true
       run: terraform apply -auto-approve
