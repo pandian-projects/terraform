@@ -50,19 +50,31 @@ jobs:
     - name: Terraform Plan
       run: terraform plan -no-color -out=tfplan
 
-    - name: Save Plan
+    - name: Save Plan as Text
       run: terraform show -no-color tfplan > plan.txt
 
+    # ✅ Fix 1: path is relative to repo root, not working-directory
     - name: Comment Plan in PR
       uses: marocchino/sticky-pull-request-comment@v2
       with:
-        path: plan.txt
+        path: env/dev/plan.txt
+
+    # ✅ Fix 2: upload tfplan so apply job can use the exact same plan
+    - name: Upload Plan Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: tfplan
+        path: env/dev/tfplan
+        retention-days: 1
 
 
   terraform-apply:
     runs-on: ubuntu-latest
 
     if: github.event.action == 'closed' && github.event.pull_request.merged == true
+
+    # ✅ Approval gate — create this environment in Settings → Environments
+    environment: terraform-prod-approval
 
     permissions:
       id-token: write
@@ -88,5 +100,13 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
+    # ✅ Fix 2: download the exact plan from the plan job
+    - name: Download Plan Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: tfplan
+        path: env/dev
+
+    # ✅ Apply uses saved plan — no re-plan, applies exactly what was reviewed
     - name: Terraform Apply
-      run: terraform apply -auto-approve
+      run: terraform apply -auto-approve tfplan
