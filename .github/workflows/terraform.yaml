@@ -100,12 +100,8 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
-    # ✅ Fix 2: download the exact plan from the plan job
-    - name: Download Plan Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: tfplan
-        path: env/dev
+    - name: Terraform Plan
+      run: terraform plan -no-color -out=tfplan
 
     # ✅ Apply uses saved plan — no re-plan, applies exactly what was reviewed
     - name: Terraform Apply
