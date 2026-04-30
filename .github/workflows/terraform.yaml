@@ -1,17 +1,26 @@
-name: Terraform Apply on PR Merge
+name: Terraform CI/CD
 
 on:
   pull_request:
     branches: [ dev ]
-    types: [ closed ]
+    types: [ opened, synchronize, reopened, closed ]
+
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+
   terraform-plan:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+
+    if: github.event.action != 'closed'
+
     permissions:
       id-token: write
       contents: read
+      pull-requests: write
+
     defaults:
       run:
         working-directory: env/dev
@@ -39,24 +48,26 @@ jobs:
       run: terraform validate
 
     - name: Terraform Plan
-      run: terraform plan -out=tfplan
+      run: terraform plan -no-color -out=tfplan
 
-    # Save plan artifact so the apply job can use it
-    - name: Upload Plan Artifact
-      uses: actions/upload-artifact@v4
+    - name: Save Plan
+      run: terraform show -no-color tfplan > plan.txt
+
+    - name: Comment Plan in PR
+      uses: marocchino/sticky-pull-request-comment@v2
       with:
-        name: tfplan
-        path: env/dev/tfplan
+        path: plan.txt
+
 
   terraform-apply:
-    needs: terraform-plan
     runs-on: ubuntu-latest
-    # 👇 This environment has required reviewers — pauses here until approved
-    environment: terraform-apply-approval
+
+    if: github.event.action == 'closed' && github.event.pull_request.merged == true
 
     permissions:
       id-token: write
       contents: read
+
     defaults:
       run:
         working-directory: env/dev
@@ -74,14 +85,8 @@ jobs:
         aws-region: us-east-1
         role-to-assume: arn:aws:iam::914690098914:role/github-terraform-service-role
 
-    - name: Download Plan Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: tfplan
-        path: env/dev
-
     - name: Terraform Init
       run: terraform init
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve tfplan
+      run: terraform apply -auto-approve
