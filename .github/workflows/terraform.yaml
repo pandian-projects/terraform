@@ -9,6 +9,14 @@ concurrency:
   group: terraform-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  AWS_REGION: us-east-1
+  ROLE_TO_ASSUME: |
+    ${{
+      (github.base_ref == 'dev' && 'arn:aws:iam::914690098914:role/github-terraform-service-role') ||
+      (github.base_ref == 'main' && 'arn:aws:iam::112233445566:role/kfs-stg-sdk-role-githubactions-file-transfer-batch'
+    }}
+
 jobs:
 
   terraform-plan:
@@ -35,8 +43,8 @@ jobs:
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-region: us-east-1
-        role-to-assume: arn:aws:iam::914690098914:role/github-terraform-service-role
+		  aws-region: ${{ env.AWS_REGION }}
+		  role-to-assume: ${{ env.ROLE_TO_ASSUME }}
 
     - name: Terraform Init
       run: terraform init
@@ -53,13 +61,11 @@ jobs:
     - name: Save Plan as Text
       run: terraform show -no-color tfplan > plan.txt
 
-    # ✅ Fix 1: path is relative to repo root, not working-directory
     - name: Comment Plan in PR
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         path: env/dev/plan.txt
 
-    # ✅ Fix 2: upload tfplan so apply job can use the exact same plan
     - name: Upload Plan Artifact
       uses: actions/upload-artifact@v4
       with:
@@ -73,7 +79,6 @@ jobs:
 
     if: github.event.action == 'closed' && github.event.pull_request.merged == true
 
-    # ✅ Approval gate — create this environment in Settings → Environments
     environment: terraform-apply-approval
 
     permissions:
@@ -94,8 +99,8 @@ jobs:
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-region: us-east-1
-        role-to-assume: arn:aws:iam::914690098914:role/github-terraform-service-role
+		  aws-region: ${{ env.AWS_REGION }}
+		  role-to-assume: ${{ env.ROLE_TO_ASSUME }}
 
     - name: Terraform Init
       run: terraform init
@@ -103,6 +108,5 @@ jobs:
     - name: Terraform Plan
       run: terraform plan -no-color -out=tfplan
 
-    # ✅ Apply uses saved plan — no re-plan, applies exactly what was reviewed
     - name: Terraform Apply
       run: terraform apply -auto-approve tfplan
