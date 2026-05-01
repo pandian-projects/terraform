@@ -15,9 +15,6 @@ env:
 
 jobs:
 
-  # =========================
-  # 🧪 PLAN (PR only)
-  # =========================
   terraform-plan:
     runs-on: ubuntu-latest
 
@@ -67,16 +64,11 @@ jobs:
         path: env/dev/plan.txt
 
 
-  # =========================
-  # 🚀 APPLY (only on merge)
-  # =========================
   terraform-apply:
     runs-on: ubuntu-latest
 
-    # Run only when PR is merged
     if: github.event.action == 'closed' && github.event.pull_request.merged == true
 
-    # Optional approval gate (keep if you want manual approval)
     environment: terraform-apply-approval
 
     permissions:
