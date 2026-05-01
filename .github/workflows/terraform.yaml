@@ -64,7 +64,7 @@ jobs:
     - name: Comment Plan in PR
       uses: marocchino/sticky-pull-request-comment@v2
       with:
-        path: plan.txt
+        path: env/dev/plan.txt
 
 
   # =========================
