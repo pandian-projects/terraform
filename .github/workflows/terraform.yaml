@@ -11,11 +11,7 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  ROLE_TO_ASSUME: |
-    ${{
-      (github.base_ref == 'dev' && 'arn:aws:iam::914690098914:role/github-terraform-service-role') ||
-      (github.base_ref == 'main' && 'arn:aws:iam::112233445566:role/kfs-stg-sdk-role-githubactions-file-transfer-batch'
-    }}
+  ROLE_TO_ASSUME: arn:aws:iam::914690098914:role/github-terraform-service-role
 
 jobs:
 
