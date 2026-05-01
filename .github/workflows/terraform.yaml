@@ -15,9 +15,13 @@ env:
 
 jobs:
 
+  # =========================
+  # 🧪 PLAN (PR only)
+  # =========================
   terraform-plan:
     runs-on: ubuntu-latest
 
+    # Run only for active PR (not closed)
     if: github.event.action != 'closed'
 
     permissions:
@@ -39,8 +43,8 @@ jobs:
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-		  aws-region: ${{ env.AWS_REGION }}
-		  role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+        aws-region: ${{ env.AWS_REGION }}
+        role-to-assume: ${{ env.ROLE_TO_ASSUME }}
 
     - name: Terraform Init
       run: terraform init
@@ -60,21 +64,19 @@ jobs:
     - name: Comment Plan in PR
       uses: marocchino/sticky-pull-request-comment@v2
       with:
-        path: env/dev/plan.txt
-
-    - name: Upload Plan Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: tfplan
-        path: env/dev/tfplan
-        retention-days: 1
+        path: plan.txt
 
 
+  # =========================
+  # 🚀 APPLY (only on merge)
+  # =========================
   terraform-apply:
     runs-on: ubuntu-latest
 
+    # Run only when PR is merged
     if: github.event.action == 'closed' && github.event.pull_request.merged == true
 
+    # Optional approval gate (keep if you want manual approval)
     environment: terraform-apply-approval
 
     permissions:
@@ -95,8 +97,8 @@ jobs:
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-		  aws-region: ${{ env.AWS_REGION }}
-		  role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+        aws-region: ${{ env.AWS_REGION }}
+        role-to-assume: ${{ env.ROLE_TO_ASSUME }}
 
     - name: Terraform Init
       run: terraform init
