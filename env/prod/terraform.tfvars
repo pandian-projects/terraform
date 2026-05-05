@@ -1,0 +1,9 @@
+vpc_name      = "tf-prod"
+managed_by    = "terraform-v1"
+region        = "ap-south-1"
+vpc_cidr      = "10.1.0.0/16"
+subnet_cidr   = "10.1.1.0/24"
+instance_type = "ap-south-1"
+ami           = "ami-02eb0c2388ee999f9" # Amazon Linux
+key_name      = "linux-04-26"
+my_ip         = "49.43.248.134/32"
