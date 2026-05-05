@@ -2,11 +2,11 @@ name: Terraform CI/CD
 
 on:
   pull_request:
-    branches: [ dev ]
+    branches: [ dev, main ]
     types: [ opened, synchronize, reopened, closed ]
 
 concurrency:
-  group: terraform-${{ github.ref }}
+  group: terraform-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 env:
@@ -15,10 +15,8 @@ env:
 
 jobs:
 
-  terraform-plan:
+  plan:
     runs-on: ubuntu-latest
-
-    # Run only for active PR (not closed)
     if: github.event.action != 'closed'
 
     permissions:
@@ -28,13 +26,14 @@ jobs:
 
     defaults:
       run:
-        working-directory: env/dev
+        working-directory: ${{ github.base_ref == 'main' && 'env/prod' || 'env/dev' }}
 
     steps:
+	
     - name: Checkout
       uses: actions/checkout@v4
-
-    - name: Setup Terraform
+	  
+	- name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
 
     - name: Configure AWS Credentials
@@ -45,16 +44,16 @@ jobs:
 
     - name: Terraform Init
       run: terraform init
-
+	  
     - name: Terraform Format Check
       run: terraform fmt -check
-
+	  
     - name: Terraform Validate
       run: terraform validate
-
+	  
     - name: Terraform Plan
       run: terraform plan -no-color -out=tfplan
-
+	  
     - name: Save Plan as Text
       run: terraform show -no-color tfplan > plan.txt
 
@@ -66,10 +65,9 @@ jobs:
 
   terraform-apply:
     runs-on: ubuntu-latest
-
     if: github.event.action == 'closed' && github.event.pull_request.merged == true
 
-    environment: terraform-apply-approval
+    environment: ${{ github.base_ref == 'main' && 'prod-approval' || 'dev-approval' }}
 
     permissions:
       id-token: write
@@ -77,12 +75,13 @@ jobs:
 
     defaults:
       run:
-        working-directory: env/dev
+        working-directory: ${{ github.base_ref == 'main' && 'env/prod' || 'env/dev' }}
 
     steps:
+	
     - name: Checkout
       uses: actions/checkout@v4
-
+	  
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
 
@@ -94,9 +93,9 @@ jobs:
 
     - name: Terraform Init
       run: terraform init
-
+	  
     - name: Terraform Plan
       run: terraform plan -no-color -out=tfplan
-
+	
     - name: Terraform Apply
       run: terraform apply -auto-approve tfplan
