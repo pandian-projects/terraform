@@ -18,6 +18,8 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     if: github.event.action != 'closed'
+    env:
+      TF_WORKING_DIR: ${{ github.base_ref == 'main' && 'env/prod' || 'env/dev' }}
 
     permissions:
       id-token: write
@@ -59,7 +61,8 @@ jobs:
       - name: Comment Plan in PR
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          path: env/dev/plan.txt
+          header: terraform-plan
+          path: ${{ env.TF_WORKING_DIR }}/plan.txt
 
 
   terraform-apply:
