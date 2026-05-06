@@ -7,3 +7,4 @@ variable "instance_type" {}
 variable "key_name" {}
 variable "my_ip" {}
 variable "region" {}
+variable "sns-topic-name" {}

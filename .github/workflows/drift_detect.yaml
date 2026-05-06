@@ -1,0 +1,64 @@
+name: Terraform Drift Detection
+
+on:
+  schedule:
+    - cron: "30 22 * * *"   
+  workflow_dispatch:       # Allow manual trigger
+
+env:
+  AWS_REGION: us-east-1
+  ROLE_TO_ASSUME: arn:aws:iam::914690098914:role/github-terraform-service-role
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    strategy:
+      matrix:
+        env: [dev]   # add prod later if needed
+
+    defaults:
+      run:
+        working-directory: env/${{ matrix.env }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Drift Detection (Plan)
+        id: plan
+        run: |
+          terraform plan -detailed-exitcode -no-color > plan.txt
+        continue-on-error: true
+
+      - name: Check Drift Result
+        run: |
+          if [ $? -eq 2 ]; then
+            echo "🚨 Drift detected!"
+            exit 1
+          else
+            echo "✅ No drift"
+          fi
+
+      - name: Upload Drift Plan
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-plan
+          path: env/${{ matrix.env }}/plan.txt
