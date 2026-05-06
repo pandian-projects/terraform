@@ -5,5 +5,5 @@ resource "aws_sns_topic" "tf_drift" {
 resource "aws_sns_topic_subscription" "tf_drift_notification" {
   topic_arn = aws_sns_topic.tf_drift
   protocol  = "email"
-  endpoint  = j.pandian04@gmail.com
+  endpoint  = "j.pandian04@gmail.com"
 }
