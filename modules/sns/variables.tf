@@ -1,2 +1,2 @@
-variable "sns-topic-name" {}
-variable "sns-protocol" {}
+variable "sns_topic_name" {}
+variable "sns_protocol" {}
