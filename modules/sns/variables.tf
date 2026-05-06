@@ -1,0 +1,1 @@
+variable "sns-topic-name" {}

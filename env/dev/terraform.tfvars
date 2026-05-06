@@ -7,3 +7,4 @@ instance_type = "t2.micro"
 ami           = "ami-098e39bafa7e7303d" # Amazon Linux
 key_name      = "linux-04-26"
 my_ip         = "49.43.248.89/32"
+sns-topic-name = "tf_drift_detect"
