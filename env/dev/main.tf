@@ -23,8 +23,7 @@ module "ec2" {
 module "sns" {
   source = "../../modules/sns"
 
-  name          = var.sns_topic_name
-  topic_arn     = module.tf_drift.arn
-  protocol      = var.sns_protocol
-  endpoint      = "j.pandian04@gmail.com"
+  sns_topic_name = var.sns_topic_name
+  sns_protocol   = var.sns_protocol
+  endpoint       = "j.pandian04@gmail.com"
 }
