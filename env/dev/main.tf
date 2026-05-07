@@ -19,3 +19,11 @@ module "ec2" {
   vpc_name      = var.vpc_name
   managed_by    = var.managed_by
 }
+
+module "sns" {
+  source = "../../modules/sns"
+
+  sns_topic_name = var.sns_topic_name
+  sns_protocol   = var.sns_protocol
+  endpoint       = "j.pandian04@gmail.com"
+}
